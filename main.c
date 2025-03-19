@@ -1,5 +1,7 @@
 #include "./file_utils.h"
+#include "./term.h"
 #include <stdio.h>
+#include <unistd.h>
 #ifdef __linux__
 #include <getopt.h> // На Linux getopt_long в <getopt.h>
 #else
@@ -45,10 +47,36 @@ int main(int argc, char *argv[]) {
       get_file_tree(dir, ignore_dirs, ignore_dirs_count, ignore_exts,
                     ignore_exts_count, require_strings, require_strings_count);
 
-  printf("\n=== TDO ===\n");
   int total_files = count_files_from_tree(tree);
   int active_index = 1;
   char **list = get_list_from_tree(tree);
+
+  clear_screen();
+  printf("\n=== TDO ===\n");
   print_file_list(list, total_files, &active_index);
+  fflush(stdout);
+  char c;
+  while (1) {
+    if (read(STDIN_FILENO, &c, 1) == 1) {
+      if (c == '\033') {
+        char seq[3];
+        if (read(STDIN_FILENO, &seq[0], 1) != 1)
+          continue;
+        if (read(STDIN_FILENO, &seq[1], 1) != 1)
+          continue;
+        if (seq[0] == '[') {
+          if (seq[1] == 'A' && active_index > 0)
+            active_index--;
+          else if (seq[1] == 'B' && active_index < total_files - 1)
+            active_index++;
+          print_file_list(list, total_files, &active_index);
+        }
+      } else if (c == 'q')
+        break;
+    }
+  }
+
+  disable_raw_mode();
+  clear_screen();
   return 0;
 }
