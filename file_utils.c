@@ -1,4 +1,5 @@
 #include "./file_utils.h"
+#include "tdo_utils.h"
 #include <dirent.h> // Подключаем для opendir, readdir, closedir
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,8 +20,10 @@ int contains_required_strings(const char *content, const char **require_strings,
 }
 
 // Функция для проверки, нужно ли игнорировать элемент
-int should_ignore(const char *name, const char **ignore_list,
+int should_ignore(const char *path, const char **ignore_list,
                   size_t ignore_count) {
+  const char *name = strrchr(path, '/') ? strrchr(path, '/') + 1 : path;
+
   for (size_t i = 0; i < ignore_count; i++) {
     if (strcmp(name, ignore_list[i]) == 0) {
       return 1; // Игнорировать
@@ -44,19 +47,47 @@ int has_ignored_extension(const char *name, const char **ignore_exts,
   return 0; // Не игнорировать
 }
 
+// void free_list(todo_t **list, int total_files) {
+// for (int i = 0; i < total_files; i++) {
+//   free(list[i]);
+// }
+// free(list);
+// }
+
 void free_file_tree(file_tree_t *tree) {
-  if (!tree)
+  if (!tree) {
+    printf("free_file_tree: tree is NULL\n");
     return;
-  free(tree->name);
-  free(tree->path);
-  if (tree->is_dir) {
-    for (size_t i = 0; i < tree->num_files; i++) {
-      free_file_tree(&tree->content.files[i]);
-    }
-    free(tree->content.files);
-  } else {
-    free(tree->content.file_source);
   }
+
+  printf("Freeing tree at %p\n", (void *)tree);
+  if (tree->path) {
+    printf("Freeing path at %p: %s\n", (void *)tree->path, tree->path);
+    free(tree->path);
+  }
+
+  if (tree->is_dir) {
+    if (tree->content.files) {
+      printf("Directory with %zu files at %p\n", tree->num_files,
+             (void *)tree->content.files);
+      for (size_t i = 0; i < tree->num_files; i++) {
+        printf("Recursively freeing file %zu at %p\n", i,
+               (void *)tree->content.files[i]);
+        free_file_tree(tree->content.files[i]);
+      }
+      printf("Freeing files array at %p\n", (void *)tree->content.files);
+      free(tree->content.files);
+    } else {
+      printf("No files array, num_files = %zu\n", tree->num_files);
+    }
+  } else {
+    if (tree->content.file_source) {
+      printf("Freeing file_source at %p\n", (void *)tree->content.file_source);
+      free(tree->content.file_source);
+    }
+  }
+
+  printf("Freeing tree structure at %p\n", (void *)tree);
   free(tree);
 }
 
@@ -108,29 +139,26 @@ file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
   if (node == NULL)
     return NULL;
 
-  node->path = path;
-  node->name =
-      strdup(strrchr(path, '/') ? strrchr(path, '/') + 1
-                                : path); // get name after last / or whole path
+  node->path = strdup(path);
   node->is_dir = S_ISDIR(path_stat.st_mode);
   node->num_files = 0;
   // Если это директория и она в списке игнорируемых
   if (node->is_dir &&
-      should_ignore(node->name, ignore_dirs, ignore_dirs_count)) {
-    free(node->name);
+      should_ignore(node->path, ignore_dirs, ignore_dirs_count)) {
+    free(node->path);
     free(node);
     return NULL;
   }
   if (!node->is_dir) {
     // Проверяем расширение
-    if (has_ignored_extension(node->name, ignore_exts, ignore_exts_count)) {
-      free(node->name);
+    if (has_ignored_extension(node->path, ignore_exts, ignore_exts_count)) {
+      free(node->path);
       free(node);
       return NULL;
     }
     node->content.file_source = get_file_content(path, path_stat.st_size);
     if (!node->content.file_source) {
-      free(node->name);
+      free(node->path);
       free(node);
       return NULL;
     }
@@ -138,7 +166,7 @@ file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
     if (!contains_required_strings(node->content.file_source, require_strings,
                                    require_strings_count)) {
       free(node->content.file_source);
-      free(node->name);
+      free(node->path);
       free(node);
       return NULL;
     }
@@ -147,7 +175,7 @@ file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
   // Это директория
   DIR *dir = opendir(path);
   if (!dir) {
-    free(node->name);
+    free(node->path);
     free(node);
     return NULL;
   }
@@ -163,7 +191,7 @@ file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
 
   node->content.files = malloc(count * sizeof(file_tree_t));
   if (!node->content.files) {
-    free(node->name);
+    free(node->path);
     free(node);
     closedir(dir);
     return NULL;
@@ -182,8 +210,7 @@ file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
         full_path, ignore_dirs, ignore_dirs_count, ignore_exts,
         ignore_exts_count, require_strings, require_strings_count);
     if (child) {
-      node->content.files[i++] = *child;
-      free(child);
+      node->content.files[i++] = child;
     }
   }
   node->num_files = i;
@@ -226,12 +253,10 @@ size_t count_files_from_tree(file_tree_t *tree) {
     return 1;
   size_t total = 0;
   for (size_t i = 0; i < tree->num_files; i++) {
-    total += count_files_from_tree(&tree->content.files[i]);
+    total += count_files_from_tree(tree->content.files[i]);
   }
   return total;
 }
-
-// file_tree_t *find_tree_node_by_path(file_tree_t *tree, char *path) {}
 
 void fill_list(file_tree_t *tree, char **list, size_t *index) {
   if (!tree)
@@ -243,7 +268,7 @@ void fill_list(file_tree_t *tree, char **list, size_t *index) {
     return;
   }
   for (size_t i = 0; i < tree->num_files; i++) {
-    fill_list(&tree->content.files[i], list, index);
+    fill_list(tree->content.files[i], list, index);
   }
 }
 
@@ -257,26 +282,17 @@ char **get_list_from_tree(file_tree_t *tree) {
   return result;
 }
 
-void print_file_list(char **list, int listc, int *active_index) {
+void print_file_list(char **list, int listc, int *active_index,
+                     int *opened_index) {
   if (!list)
     return;
   for (int i = 0; i < listc; i++) {
-    if (i == *active_index) {
-      printf("> %s\n", prettify_path(list[i]));
+    if (i == *active_index && *active_index == *opened_index) {
+      printf("╠» [%s]\n", prettify_path(list[i]));
+    } else if (i == *active_index) {
+      printf("╠» %s\n", prettify_path(list[i]));
     } else {
-      printf("  %s\n", prettify_path(list[i]));
+      printf("║  %s\n", prettify_path(list[i]));
     }
-  }
-}
-void print_file_tree(file_tree_t *tree, int depth) {
-  if (!tree) {
-    return;
-  }
-  if (tree->is_dir) {
-    for (size_t i = 0; i < tree->num_files; i++) {
-      print_file_tree(&tree->content.files[i], depth + 1);
-    }
-  } else {
-    printf("%s\n", prettify_path(tree->path));
   }
 }

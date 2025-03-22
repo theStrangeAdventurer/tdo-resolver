@@ -8,7 +8,7 @@ CFLAGS = -Wall -Wextra -std=gnu99
 TARGET = tdo
 
 # Исходные файлы
-SRCS = main.c file_utils.c term.c
+SRCS = main.c file_utils.c term.c render.c tdo_utils.c
 
 # Объектные файлы
 OBJS = $(SRCS:.c=.o)
