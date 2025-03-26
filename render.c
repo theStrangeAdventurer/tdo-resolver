@@ -47,12 +47,10 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
       } else if (c == '\n' || c == '\r' || c == 'l') { // Enter (\r) или l
         if (!global_skip_banner) {
           global_skip_banner = 1;
-        }
-        if (*opened_index == *active_index) {
+        } else if (*opened_index == *active_index) {
           *opened_index = -1;
         } else {
           *opened_index = *active_index; // Устанавливаем opened_index равным
-                                         //         // текущему active_index
         }
         clear_screen();
         print_todo_list(list, total_files, active_index, opened_index,

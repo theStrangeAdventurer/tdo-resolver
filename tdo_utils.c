@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 // ANSI-color codes
 #define COLOR_RESET "\033[0m"
@@ -18,6 +19,7 @@
 #define COLOR_DIMMED_RESET "\033[0;0m"
 
 #define SURROUND_CONTEXT_LINES 5
+#define ANIMATION_TIME 50000
 
 void setGreenColor() { printf(COLOR_GREEN); }
 void resetColor() { printf(COLOR_RESET); }
@@ -298,6 +300,67 @@ cleanup:
   return 0;
 }
 
+void print_banner() {
+  setbuf(stdout, NULL);
+  setGreenColor();
+  printf("\n"
+         "  ████████╗██████╗  ██████╗\n"
+         "  ╚══██╔══╝██╔══██╗██╔═══██╗\n"
+         "     ██║   ██║  ██║██║   ██║\n"
+         "     ██║   ██║  ██║██║   ██║\n"
+         "     ██║   ██████╔╝╚██████╔╝\n"
+         "     ╚═╝   ╚═════╝  ╚═════╝\n");
+  printf("  >");
+  usleep(ANIMATION_TIME);
+  printf(">");
+  usleep(ANIMATION_TIME);
+  printf(">");
+  usleep(ANIMATION_TIME);
+  printf(" G");
+  usleep(ANIMATION_TIME);
+  printf("e");
+  usleep(ANIMATION_TIME);
+  printf("t ");
+  usleep(ANIMATION_TIME);
+  printf("S");
+  usleep(ANIMATION_TIME);
+  printf("h");
+  usleep(ANIMATION_TIME);
+  printf("i");
+  usleep(ANIMATION_TIME);
+  printf("t ");
+  usleep(ANIMATION_TIME);
+  printf("D");
+  usleep(ANIMATION_TIME);
+  printf("o");
+  usleep(ANIMATION_TIME);
+  printf("n");
+  usleep(ANIMATION_TIME);
+  printf("e");
+  usleep(ANIMATION_TIME);
+  printf(", ");
+  usleep(ANIMATION_TIME);
+  printf("N");
+  usleep(ANIMATION_TIME);
+  printf("o ");
+  usleep(ANIMATION_TIME);
+  printf("F");
+  usleep(ANIMATION_TIME);
+  printf("u");
+  usleep(ANIMATION_TIME);
+  printf("s");
+  usleep(ANIMATION_TIME);
+  printf("s");
+  usleep(ANIMATION_TIME);
+  printf(" <");
+  usleep(ANIMATION_TIME);
+  printf("<");
+  usleep(ANIMATION_TIME);
+  printf("<\n\n");
+  usleep(ANIMATION_TIME);
+  resetColor();
+}
+
 void print_space_hotkey() {
 
   // Второй ряд для Space
@@ -314,7 +377,7 @@ void print_hotkeys() {
                     "╔════════════════╗ " COLOR_YELLOW
                     "╔════════════════╗\n" COLOR_RESET);
   printf(COLOR_BLUE " ║ ↑/↓/J/K: Move  ║ " COLOR_GREEN
-                    "║ Enter/L: Open  ║  " COLOR_YELLOW
+                    "║ Enter/L: Open  ║ " COLOR_YELLOW
                     "║ Q: Quit        ║\n" COLOR_RESET);
   printf(COLOR_BLUE " ╚════════════════╝ " COLOR_GREEN
                     "╚════════════════╝ " COLOR_YELLOW
@@ -362,6 +425,7 @@ char *replace_newlines(char *src) {
 void print_todo_list(todo_t *list, int listc, int *active_index,
                      int *opened_index, int should_skip_render_banner) {
   if (!should_skip_render_banner) {
+    print_banner();
     print_hotkeys();
     return;
   }

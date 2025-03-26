@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
                               ignore_extensions_count, required_strings,
                               required_str_count);
 
-  int active_index = 1;
+  int active_index = 0;
   int opened_index = -1;
   collect_all_todos(global_tree, &global_list, &global_total_files);
   clear_screen();
