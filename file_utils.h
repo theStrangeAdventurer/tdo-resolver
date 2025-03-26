@@ -19,8 +19,6 @@ char *get_file_content(const char *path, size_t content_size);
 
 size_t count_files_from_tree(file_tree_t *tree);
 
-void free_list(char **list, int total_files);
-
 void free_file_tree(file_tree_t *tree);
 
 void print_file_list(char **list, int listc, int *active_index,

@@ -1,23 +1,9 @@
 #include "./file_utils.h"
-#include "tdo_utils.h"
 #include <dirent.h> // Подключаем для opendir, readdir, closedir
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-
-// Функция для проверки наличия требуемых строк
-int contains_required_strings(const char *content, const char **require_strings,
-                              size_t require_strings_count) {
-  if (!content || require_strings_count == 0)
-    return 1; // Если фильтр пустой, включаем все файлы
-  for (size_t i = 0; i < require_strings_count; i++) {
-    if (strstr(content, require_strings[i])) {
-      return 1; // Нашли хотя бы одну строку
-    }
-  }
-  return 0; // Не нашли ни одну строку
-}
 
 // Функция для проверки, нужно ли игнорировать элемент
 int should_ignore(const char *path, const char **ignore_list,
@@ -46,14 +32,6 @@ int has_ignored_extension(const char *name, const char **ignore_exts,
   }
   return 0; // Не игнорировать
 }
-
-// void free_list(todo_t **list, int total_files) {
-// for (int i = 0; i < total_files; i++) {
-//   free(list[i]);
-// }
-// free(list);
-// }
-
 void free_file_tree(file_tree_t *tree) {
   if (!tree) {
     printf("free_file_tree: tree is NULL\n");
@@ -95,7 +73,7 @@ char *get_file_content(const char *path, size_t content_size) {
   // Открываем файл
   FILE *file = fopen(path, "r");
   if (!file) {
-    perror("Ошибка открытия файла");
+    perror("get_file_content fopen");
     return NULL;
   }
 
@@ -123,6 +101,7 @@ char *get_file_content(const char *path, size_t content_size) {
   fclose(file);
   return content;
 }
+
 file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
                            size_t ignore_dirs_count, const char **ignore_exts,
                            size_t ignore_exts_count,
@@ -142,7 +121,6 @@ file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
   node->path = strdup(path);
   node->is_dir = S_ISDIR(path_stat.st_mode);
   node->num_files = 0;
-  // Если это директория и она в списке игнорируемых
   if (node->is_dir &&
       should_ignore(node->path, ignore_dirs, ignore_dirs_count)) {
     free(node->path);
@@ -162,9 +140,7 @@ file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
       free(node);
       return NULL;
     }
-    // Проверяем содержимое на наличие требуемых строк
-    if (!contains_required_strings(node->content.file_source, require_strings,
-                                   require_strings_count)) {
+    if (!node->content.file_source) { // if file is empty
       free(node->content.file_source);
       free(node->path);
       free(node);
@@ -172,7 +148,7 @@ file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
     }
     return node;
   }
-  // Это директория
+  // handle directory
   DIR *dir = opendir(path);
   if (!dir) {
     free(node->path);
@@ -280,19 +256,4 @@ char **get_list_from_tree(file_tree_t *tree) {
   size_t index = 0;
   fill_list(tree, result, &index);
   return result;
-}
-
-void print_file_list(char **list, int listc, int *active_index,
-                     int *opened_index) {
-  if (!list)
-    return;
-  for (int i = 0; i < listc; i++) {
-    if (i == *active_index && *active_index == *opened_index) {
-      printf("╠» [%s]\n", prettify_path(list[i]));
-    } else if (i == *active_index) {
-      printf("╠» %s\n", prettify_path(list[i]));
-    } else {
-      printf("║  %s\n", prettify_path(list[i]));
-    }
-  }
 }
