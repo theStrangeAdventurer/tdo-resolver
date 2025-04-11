@@ -38,35 +38,56 @@ void free_file_tree(file_tree_t *tree) {
     return;
   }
 
-  printf("Freeing tree at %p\n", (void *)tree);
   if (tree->path) {
-    printf("Freeing path at %p: %s\n", (void *)tree->path, tree->path);
     free(tree->path);
   }
 
   if (tree->is_dir) {
     if (tree->content.files) {
-      printf("Directory with %zu files at %p\n", tree->num_files,
-             (void *)tree->content.files);
       for (size_t i = 0; i < tree->num_files; i++) {
-        printf("Recursively freeing file %zu at %p\n", i,
-               (void *)tree->content.files[i]);
         free_file_tree(tree->content.files[i]);
       }
-      printf("Freeing files array at %p\n", (void *)tree->content.files);
       free(tree->content.files);
-    } else {
-      printf("No files array, num_files = %zu\n", tree->num_files);
     }
   } else {
     if (tree->content.file_source) {
-      printf("Freeing file_source at %p\n", (void *)tree->content.file_source);
       free(tree->content.file_source);
     }
   }
 
-  printf("Freeing tree structure at %p\n", (void *)tree);
   free(tree);
+}
+
+char *construct_file_path(char *file_path, char *dir, char *file_name,
+                          size_t max_len) {
+  file_path[0] = '\0'; // ensure we have an empty string here
+
+  size_t dir_len = strlen(dir);
+  char temp_dir[max_len];
+  strncpy(temp_dir, dir, max_len - 1);
+  temp_dir[max_len - 1] = '\0';
+  if (dir_len > 0 && temp_dir[dir_len - 1] == '/') {
+    temp_dir[dir_len - 1] = '\0';
+  }
+  strncpy(file_path, temp_dir, max_len - 1);
+  file_path[max_len - 1] = '\0';
+
+  return strncat(file_path, file_name, max_len - 1);
+}
+
+void write_file(char *path, char *content) {
+  FILE *fptr;
+  //   "r" — чтение (файл должен существовать).
+  // "w" — запись с перезаписью (если файл существует, он будет очищен).
+  // "a" — запись в конец файла (дописывание без удаления старого содержимого).
+  // "r+" — чтение + запись (файл должен существовать, запись происходит с
+  // начала).
+  // "w+" — чтение + запись с перезаписью (файл очищается).
+  // "a+" — чтение + запись в конец (дописывание).
+  fptr = fopen(path, "w");
+  // Write some text to the file
+  fprintf(fptr, "%s\n", content);
+  fclose(fptr);
 }
 
 char *get_file_content(const char *path, size_t content_size) {
@@ -104,9 +125,7 @@ char *get_file_content(const char *path, size_t content_size) {
 
 file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
                            size_t ignore_dirs_count, const char **ignore_exts,
-                           size_t ignore_exts_count,
-                           const char **require_strings,
-                           size_t require_strings_count) {
+                           size_t ignore_exts_count) {
   struct stat path_stat;
   if (stat(path, &path_stat) != 0) {
     perror("tdo_error:get_file_tree/path_stat");
@@ -182,9 +201,9 @@ file_tree_t *get_file_tree(char *path, const char **ignore_dirs,
     char full_path[1024];
     snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
 
-    file_tree_t *child = get_file_tree(
-        full_path, ignore_dirs, ignore_dirs_count, ignore_exts,
-        ignore_exts_count, require_strings, require_strings_count);
+    file_tree_t *child =
+        get_file_tree(full_path, ignore_dirs, ignore_dirs_count, ignore_exts,
+                      ignore_exts_count);
     if (child) {
       node->content.files[i++] = child;
     }

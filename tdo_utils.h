@@ -1,5 +1,5 @@
 #pragma once
-
+#define EXPORT_MARKER "__tdo_export_file__"
 #include "file_utils.h"
 
 typedef struct todo {
@@ -11,6 +11,7 @@ typedef struct todo {
   char *surround_content_after;  // Сколько-то строк после
 } todo_t;
 
+char *get_todos_json(todo_t *todos, size_t todos_num);
 int collect_all_todos(file_tree_t *tree, todo_t **todos, size_t *out_count);
 
 void print_todo_list(todo_t *list, int listc, int *active_index,

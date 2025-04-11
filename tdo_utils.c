@@ -120,6 +120,11 @@ static int collect_todos_from_file(const char *path, const char *file_content,
     return 0;
   }
 
+  if (strstr(file_content, EXPORT_MARKER)) { // ignore export report file
+    *out_count = 0;
+    return -1;
+  }
+
   const char *pattern = "(FIXME|TODO)(\\([[:alnum:]]+\\))?:";
   regex_t regex;
   int ret = regcomp(&regex, pattern, REG_EXTENDED);
@@ -224,81 +229,197 @@ cleanup:
   *out_count = 0;
   return 0;
 }
+
+// Вспомогательная функция для очистки
+void free_todos_array(todo_t *todos, size_t count) {
+  if (!todos)
+    return;
+
+  for (size_t i = 0; i < count; i++) {
+    free(todos[i].path);
+    free(todos[i].title);
+    free(todos[i].raw_title);
+    free(todos[i].surround_content_before);
+    free(todos[i].surround_content_after);
+  }
+  free(todos);
+}
+
 int collect_all_todos(file_tree_t *tree, todo_t **todos, size_t *out_count) {
+
+  // Проверка входных параметров
   if (!tree || !out_count) {
     *out_count = 0;
-    perror("collect_all_todos incorrent pointer or empty out");
+    fprintf(stderr, "Error: Invalid parameters\n");
+    return 0;
+  }
+  static int depth = 0;     // Для отслеживания глубины рекурсии
+  const int MAX_DEPTH = 32; // Лимит для защиты от переполнения стека
+
+  if (depth > MAX_DEPTH) {
+    fprintf(stderr, "Error: Maximum recursion depth exceeded\n");
+    *out_count = 0;
     return 0;
   }
 
+  depth++;
+
   size_t total_count = 0;
   todo_t *all_todos = NULL;
+  int ret = 1; // Флаг успеха
 
   if (tree->is_dir) {
-    // Обход подкаталогов
     for (size_t i = 0; i < tree->num_files; i++) {
       size_t sub_count = 0;
       todo_t *sub_todos = NULL;
 
       if (!collect_all_todos(tree->content.files[i], &sub_todos, &sub_count)) {
-        perror("collect_all_todos cannot collect sub todos");
-        goto cleanup;
+        fprintf(stderr, "Error processing subdirectory\n");
+        ret = 0;
+        continue; // Продолжаем обработку других файлов
       }
 
       if (sub_count > 0) {
-        todo_t *tmp = (todo_t *)realloc(all_todos, (total_count + sub_count) *
-                                                       sizeof(todo_t));
+        todo_t *tmp =
+            realloc(all_todos, (total_count + sub_count) * sizeof(todo_t));
         if (!tmp) {
-          perror("collect_all_todos realloc");
-          for (size_t j = 0; j < sub_count; j++) {
-            free(sub_todos[j].path);
-            free(sub_todos[j].title);
-            free(sub_todos[j].raw_title);
-            free(sub_todos[j].surround_content_before);
-            free(sub_todos[j].surround_content_after);
-          }
-          free(sub_todos);
-          goto cleanup;
+          fprintf(stderr, "Memory allocation failed\n");
+          free_todos_array(sub_todos, sub_count);
+          ret = 0;
+          break;
         }
+
         all_todos = tmp;
-        memcpy(all_todos + total_count, sub_todos, sub_count * sizeof(todo_t));
+        // Копируем только структуры, не указатели!
+        for (size_t j = 0; j < sub_count; j++) {
+          all_todos[total_count + j] = sub_todos[j];
+        }
         total_count += sub_count;
-        free(sub_todos);
+        // Не освобождаем sub_todos, так как данные теперь в all_todos
+        free(sub_todos); // Освобождаем только массив структур
       }
     }
   } else {
-    // Обработка файла
-    size_t file_count = 0;
-    todo_t *file_todos = NULL;
-    int collect_result = collect_todos_from_file(
-        tree->path, tree->content.file_source, &file_todos, &file_count);
-    if (collect_result == 0) {
-      perror("collect_all_todos collect_todos_from_file");
-      goto cleanup;
+    if (!collect_todos_from_file(tree->path, tree->content.file_source,
+                                 &all_todos, &total_count)) {
+      fprintf(stderr, "Error processing file: %s\n", tree->path);
+      ret = 0;
     }
-    if (collect_result == -1) {
-      *out_count = 0; // File without todos
-      return 1;
-    }
-    all_todos = file_todos;
-    total_count = file_count;
   }
 
-  *todos = all_todos;
-  *out_count = total_count;
-  return 1;
+  depth--;
 
-cleanup:
-  for (size_t i = 0; i < total_count; i++) {
-    free(all_todos[i].path);
-    free(all_todos[i].title);
-    free(all_todos[i].surround_content_before);
-    free(all_todos[i].surround_content_after);
+  if (ret) {
+    *todos = all_todos;
+    *out_count = total_count;
+  } else {
+    free_todos_array(all_todos, total_count);
+    *out_count = 0;
   }
-  free(all_todos);
-  *out_count = 0;
-  return 0;
+
+  return ret;
 }
+// int collect_all_todos(file_tree_t *tree, todo_t **todos, size_t *out_count) {
+//   if (!tree || !out_count) {
+//     *out_count = 0;
+//     perror("collect_all_todos incorrent pointer or empty out");
+//     return 0;
+//   }
+//   static int depth = 0;     // Для отслеживания глубины рекурсии
+//   const int MAX_DEPTH = 32; // Лимит для защиты от переполнения стека
+//
+//   if (depth > MAX_DEPTH) {
+//     fprintf(stderr, "Error: Maximum recursion depth exceeded\n");
+//     *out_count = 0;
+//     return 0;
+//   }
+//
+//   depth++;
+//   int ret = 1; // Флаг успеха
+//
+//   size_t total_count = 0;
+//   todo_t *all_todos = NULL;
+//
+//   if (tree->is_dir) {
+//     // Обход подкаталогов
+//     for (size_t i = 0; i < tree->num_files; i++) {
+//       size_t sub_count = 0;
+//       todo_t *sub_todos = NULL;
+//
+//       if (!collect_all_todos(tree->content.files[i], &sub_todos, &sub_count))
+//       {
+//         perror("collect_all_todos cannot collect sub todos");
+//         ret = 0;
+//         goto cleanup;
+//       }
+//
+//       if (sub_count > 0) {
+//         todo_t *tmp = (todo_t *)realloc(all_todos, (total_count + sub_count)
+//         *
+//                                                        sizeof(todo_t));
+//         if (!tmp) {
+//           ret = 0;
+//           perror("collect_all_todos realloc");
+//           free_todos_array(all_todos, total_count);
+//
+//           for (size_t j = 0; j < sub_count; j++) {
+//             free(sub_todos[j].path);
+//             free(sub_todos[j].title);
+//             free(sub_todos[j].raw_title);
+//             free(sub_todos[j].surround_content_before);
+//             free(sub_todos[j].surround_content_after);
+//           }
+//           free(sub_todos);
+//           goto cleanup;
+//         }
+//         all_todos = tmp;
+//         memcpy(all_todos + total_count, sub_todos, sub_count *
+//         sizeof(todo_t)); total_count += sub_count; free(sub_todos);
+//       }
+//     }
+//   } else {
+//     // Обработка файла
+//     size_t file_count = 0;
+//     todo_t *file_todos = NULL;
+//     int collect_result = collect_todos_from_file(
+//         tree->path, tree->content.file_source, &file_todos, &file_count);
+//     if (collect_result == 0) {
+//       perror("collect_all_todos collect_todos_from_file");
+//       ret = 0;
+//       goto cleanup;
+//     }
+//     if (collect_result == -1) {
+//       *out_count = 0; // File without todos
+//       return 1;
+//     }
+//     all_todos = file_todos;
+//     total_count = file_count;
+//   }
+//   depth--;
+//
+//   if (ret) {
+//     *todos = all_todos;
+//     *out_count = total_count;
+//   } else {
+//     free_todos_array(all_todos, total_count);
+//     *out_count = 0;
+//   }
+//
+//   *todos = all_todos;
+//   *out_count = total_count;
+//   return 1;
+//
+// cleanup:
+//   for (size_t i = 0; i < total_count; i++) {
+//     free(all_todos[i].path);
+//     free(all_todos[i].title);
+//     free(all_todos[i].surround_content_before);
+//     free(all_todos[i].surround_content_after);
+//   }
+//   free(all_todos);
+//   *out_count = 0;
+//   return 0;
+// }
 
 void print_banner() {
   setbuf(stdout, NULL);
@@ -472,8 +593,46 @@ void print_todo_list(todo_t *list, int listc, int *active_index,
 }
 
 void print_help(void) {
-  printf("Usage: tdo [OPTIONS] <command>\n");
+  printf("Usage: tdo [options] [command]\n");
+  printf("Commands:\n");
+  printf("  export - Exports all todos from project to json file\n");
   printf("Options:\n");
   printf("  --dir <path>  - Specify the directory to process\n");
-  printf("  --export <path>  - Specify the json file export path\n");
+  printf("  --file <value> - Specify the json filename for an export\n");
+}
+
+char *get_todos_json(todo_t *todos, size_t todos_num) {
+
+  size_t json_len = 0;
+  char json_start[50];
+  char json_end[] = "]\n}";
+
+  sprintf(json_start, "{ %s: true,\"count\": %d,\"data\": [", EXPORT_MARKER,
+          (int)todos_num);
+  for (size_t i = 0; i < todos_num; i++) {
+    json_len += strlen(todos[i].title);
+    json_len += 2; // for quotes and
+    if (i != (todos_num - 1)) {
+      json_len += 1; // for comma
+    }
+  }
+  size_t json_start_len = strlen(json_start);
+  size_t json_end_len = strlen(json_end);
+  json_len += json_start_len;
+  json_len += json_end_len;
+
+  char *result = (char *)malloc(json_len * sizeof(char));
+  if (!result)
+    return NULL;
+  char *ptr = result; // Бегунок, который будет бегать по строке
+  ptr +=
+      sprintf(ptr, "%s", json_start); // Записываем json_start и двигаем бегунок
+  for (size_t i = 0; i < todos_num; i++) {
+    ptr += sprintf(ptr, "\"%s\"", todos[i].title);
+    if (i != (todos_num - 1)) {
+      ptr += sprintf(ptr, ",");
+    }
+  }
+  sprintf(ptr, "%s", json_end);
+  return result;
 }
