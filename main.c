@@ -2,7 +2,7 @@
 #include "./render.h"
 #include "./tdo_utils.h"
 #include "./term.h"
-#include <bits/getopt_core.h>
+#include <getopt.h>
 #include <signal.h>
 #include <stddef.h>
 #include <stdio.h>
