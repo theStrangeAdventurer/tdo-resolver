@@ -1,6 +1,7 @@
 #pragma once
 #define EXPORT_MARKER "__tdo_export_file__"
 #include "file_utils.h"
+#define MAX_RENDER_ITEMS 5
 
 typedef struct todo {
   char *path;                    // Путь до файла

@@ -16,7 +16,6 @@
 #endif
 
 #define MAX_PATH_LEN 1024
-#define MAX_RENDER_ITEMS 10
 
 typedef struct {
   char mode[10];          // view | export

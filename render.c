@@ -14,7 +14,6 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
   char c;
   while (1) {
     if (read(STDIN_FILENO, &c, 1) == 1) {
-      printf("PRESSED %d\n", c);
       if (c == '\033') {
         char seq[3];
         if (read(STDIN_FILENO, &seq[0], 1) != 1)
@@ -22,10 +21,17 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
         if (read(STDIN_FILENO, &seq[1], 1) != 1)
           continue;
         if (seq[0] == '[') {
-          if (seq[1] == 'A' && *active_index > 0)
+          if (seq[1] == 'A' && *active_index > 0) {
             (*active_index)--;
-          else if (seq[1] == 'B' && (*active_index < (total_files - 1)))
+            if (*active_index < *start_index) {
+              (*start_index)--;
+            }
+          } else if (seq[1] == 'B' && (*active_index < (total_files - 1))) {
             (*active_index)++;
+            if (*active_index > (*start_index + MAX_RENDER_ITEMS)) {
+              (*start_index)++;
+            }
+          }
           clear_screen();
           print_todo_list(list, total_files, active_index, opened_index,
                           start_index, global_skip_banner);
@@ -34,12 +40,19 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
         }
       } else if (c == 'j' &&
                  *active_index < total_files - 1) { // Клавиша j (вниз)
-        (*active_index)++;
+        (*active_index)++; // TODO: move increment & decrement to separate
+                           // functions
+        if (*active_index < *start_index) {
+          (*start_index)--;
+        }
         clear_screen();
         print_todo_list(list, total_files, active_index, opened_index,
                         start_index, global_skip_banner);
       } else if (c == 'k' && *active_index > 0) { // Клавиша k (вверх)
         (*active_index)--;
+        if (*active_index > (*start_index + MAX_RENDER_ITEMS)) {
+          (*start_index)++;
+        }
         clear_screen();
         print_todo_list(list, total_files, active_index, opened_index,
                         start_index, global_skip_banner);

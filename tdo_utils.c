@@ -1,4 +1,5 @@
 #include "tdo_utils.h"
+#include "emoji.h"
 #include "file_utils.h"
 #include <regex.h>
 #include <stddef.h>
@@ -20,6 +21,7 @@
 
 #define SURROUND_CONTEXT_LINES 5
 #define ANIMATION_TIME 50000
+#define PROGRESS_BAR_WIDTH 30
 
 void setGreenColor() { printf(COLOR_GREEN); }
 void resetColor() { printf(COLOR_RESET); }
@@ -455,22 +457,28 @@ void print_todo_list(todo_t *list, int listc, int *active_index,
     resetColor();
     return;
   }
+
   int _opened = *opened_index;
+  int _start = *start_index;
+  int _end =
+      (_start + MAX_RENDER_ITEMS) > listc ? listc : _start + MAX_RENDER_ITEMS;
+  printf("%s \n", random_emoji());
+  print_unicode_progress(*active_index + 1, listc, PROGRESS_BAR_WIDTH);
 
-  printf(" ╔═══»\n");
-
-  for (int i = 0; i < listc; i++) {
+  char *has_items_before_start_item = _start > 0 ? "▴" : "▬";
+  char *has_items_after_end_item = _end < listc - 1 ? "▾" : "▬";
+  printf(" %s\n", has_items_before_start_item);
+  for (int i = _start; i < _end; i++) {
     if (i == *active_index && *active_index == *opened_index) {
-      printf(" ╠»[%s]\n", list[i].title);
-
+      printf(" ║▸[%s]\n", list[i].title);
       setGreenColor();
     } else if (i == *active_index) {
-      printf(" ╠» %s\n", list[i].title);
+      printf(" ║▸ %s\n", list[i].title);
     } else {
       printf(" ║ %s\n", list[i].title);
     }
   }
-  printf(" ╚════»\n");
+  printf(" %s\n", has_items_after_end_item);
 
   if (_opened != -1) {
     resetColor();
