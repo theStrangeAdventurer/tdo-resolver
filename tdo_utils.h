@@ -15,7 +15,8 @@ char *get_todos_json(todo_t *todos, size_t todos_num);
 int collect_all_todos(file_tree_t *tree, todo_t **todos, size_t *out_count);
 
 void print_todo_list(todo_t *list, int listc, int *active_index,
-                     int *opened_index, int should_render_banner);
+                     int *opened_index, int *start_index,
+                     int should_render_banner);
 void print_help(void);
 void print_hotkeys(void);
 

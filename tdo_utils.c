@@ -442,7 +442,8 @@ char *replace_newlines(char *src) {
 // ANSI escape codes
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 void print_todo_list(todo_t *list, int listc, int *active_index,
-                     int *opened_index, int should_skip_render_banner) {
+                     int *opened_index, int *start_index,
+                     int should_skip_render_banner) {
   if (!should_skip_render_banner) {
     print_banner();
     print_hotkeys();

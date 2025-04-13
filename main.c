@@ -16,12 +16,13 @@
 #endif
 
 #define MAX_PATH_LEN 1024
+#define MAX_RENDER_ITEMS 10
 
 typedef struct {
-  char mode[10];          // "view" или "export"
-  char dir[MAX_PATH_LEN]; // обязательный параметр --dir
-  char to[MAX_PATH_LEN];  // опциональный для export
-  int to_specified;       // флаг, что файл указан
+  char mode[10];          // view | export
+  char dir[MAX_PATH_LEN]; // where from view or export todos or notes
+  char to[MAX_PATH_LEN];  // where to export
+  int to_specified;       // --to option was specified though cli interface
 } ProgramOptions;
 
 int parse_arguments(int argc, char *argv[], ProgramOptions *options) {
@@ -32,7 +33,7 @@ int parse_arguments(int argc, char *argv[], ProgramOptions *options) {
     return 0;
   }
 
-  // Парсим основной режим работы (view/export)
+  // Parse tool mode (view/export)
   strncpy(options->mode, argv[1], sizeof(options->mode) - 1);
   options->mode[sizeof(options->mode) - 1] = '\0';
 
@@ -42,7 +43,6 @@ int parse_arguments(int argc, char *argv[], ProgramOptions *options) {
     return 0;
   }
 
-  // Парсим оставшиеся аргументы
   static struct option long_options[] = {{"dir", required_argument, 0, 'd'},
                                          {"to", required_argument, 0, 't'},
                                          {0, 0, 0, 0}};
@@ -78,7 +78,6 @@ int parse_arguments(int argc, char *argv[], ProgramOptions *options) {
     }
   }
 
-  // Проверяем обязательный параметр --dir
   if (options->dir[0] == '\0') {
     fprintf(stderr, "Error: --dir parameter is required\n");
     return 0;
@@ -94,11 +93,10 @@ size_t global_total_files = 0;
 // << Global Vars;
 
 void signal_handler(int sig) {
-  // Восстанавливаем терминал из raw-режима
+  // Restore terminal from raw mode
   disable_raw_mode();
   clear_screen();
 
-  // Очищаем память
   if (global_tree) {
     free_file_tree(global_tree);
     global_tree = NULL; // Предотвращаем повторное освобождение
@@ -108,22 +106,17 @@ void signal_handler(int sig) {
     global_list = NULL;
   }
 
-  // Выводим сообщение (опционально)
   printf("Terminated by Ctrl+C (signal %d)\n", sig);
   fflush(stdout);
-
-  // Завершаем программу
   exit(1);
 }
 
-// Функция для проверки доступности редактора в системе
 int is_editor_available(const char *editor) {
   char command[256];
   snprintf(command, sizeof(command), "command -v %s > /dev/null 2>&1", editor);
   return system(command) == 0;
 }
 
-// Функция для получения редактора по умолчанию
 const char *get_default_editor() {
   const char *editors[] = {"nvim", "nano", "vim", "vi",
                            NULL}; // Список редакторов для проверки
@@ -159,21 +152,25 @@ int main(int argc, char *argv[]) {
   }
   int opt;
   char *default_export_file =
-      "/tdo_export.json"; // Слеш только для конкатенации
+      "/tdo_export.json"; // '/' only for concatenation purposes
   char *export_path = NULL;
   int should_export = 0;
 
-  const char *ignore_dirs[] = {"node_modules", "dist", "build", ".git"};
+  const char *ignore_dirs[] = {"node_modules", "dist", "build",
+                               ".git"}; // TODO: move to env vars
   size_t ignore_dirs_count = sizeof(ignore_dirs) / sizeof(ignore_dirs[0]);
-  const char *ignore_exts[] = {".o",   ".bin", ".svg",  ".jpg", ".png",
-                               ".ico", ".exe", ".json", ".webp"};
+  const char *ignore_exts[] = {
+      ".o",   ".bin", ".svg",  ".jpg", ".png",
+      ".ico", ".exe", ".json", ".webp"}; // TODO: move to env vars
   size_t ignore_extensions_count = sizeof(ignore_exts) / sizeof(ignore_exts[0]);
 
   global_tree = get_file_tree(options.dir, ignore_dirs, ignore_dirs_count,
                               ignore_exts, ignore_extensions_count);
 
-  int active_index = 0;
-  int opened_index = -1;
+  int active_index = 0; // index of an active item in list
+  int start_index = 0;  // the index to start rendering the list from
+  int opened_index =
+      -1; // index of an opened file (showing the surrounding context)
 
   collect_all_todos(global_tree, &global_list, &global_total_files);
 
@@ -182,8 +179,8 @@ int main(int argc, char *argv[]) {
     clear_screen();
     enable_raw_mode();
 
-    render_loop(global_list, &active_index, &opened_index, global_total_files,
-                editor);
+    render_loop(global_list, &active_index, &opened_index, &start_index,
+                global_total_files, editor);
 
     disable_raw_mode();
 

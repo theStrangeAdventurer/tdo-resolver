@@ -7,8 +7,8 @@
 int global_skip_banner = 0;
 
 void render_loop(todo_t *list, int *active_index, int *opened_index,
-                 int total_files, const char *editor) {
-  print_todo_list(list, total_files, active_index, opened_index,
+                 int *start_index, int total_files, const char *editor) {
+  print_todo_list(list, total_files, active_index, opened_index, start_index,
                   global_skip_banner);
   fflush(stdout);
   char c;
@@ -28,7 +28,7 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
             (*active_index)++;
           clear_screen();
           print_todo_list(list, total_files, active_index, opened_index,
-                          global_skip_banner);
+                          start_index, global_skip_banner);
 
           fflush(stdout);
         }
@@ -37,12 +37,12 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
         (*active_index)++;
         clear_screen();
         print_todo_list(list, total_files, active_index, opened_index,
-                        global_skip_banner);
+                        start_index, global_skip_banner);
       } else if (c == 'k' && *active_index > 0) { // Клавиша k (вверх)
         (*active_index)--;
         clear_screen();
         print_todo_list(list, total_files, active_index, opened_index,
-                        global_skip_banner);
+                        start_index, global_skip_banner);
         fflush(stdout);
       } else if (c == '\n' || c == '\r' || c == 'l') { // Enter (\r) или l
         if (!global_skip_banner) {
@@ -54,7 +54,7 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
         }
         clear_screen();
         print_todo_list(list, total_files, active_index, opened_index,
-                        global_skip_banner);
+                        start_index, global_skip_banner);
         fflush(stdout);
 
       } else if (c == 'q') { // exit
@@ -66,7 +66,7 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
           *opened_index = -1;
           clear_screen();
           print_todo_list(list, total_files, active_index, opened_index,
-                          global_skip_banner);
+                          start_index, global_skip_banner);
           fflush(stdout);
         }
       }
