@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <wchar.h>
 
 const char *random_emoji() {
   static const char *emojis[] = {"(◕‿◕)", "(◕ᴗ◕)", "(◉‿◉)", "(◡‿◡)"};
@@ -17,35 +16,35 @@ const char *random_emoji() {
   int random_index = rand() % 4;
   return emojis[random_index];
 }
-
 void print_unicode_progress(int current, int total, int bar_width) {
-  printf(">> %d/%d/%d\n", current, total, bar_width);
-  // Устанавливаем локаль для поддержки Unicode
-  if (setlocale(LC_ALL, "en_US.UTF-8") == NULL) {
-    // Если не получилось установить UTF-8 локаль, пробуем C.UTF-8 или пустую
-    setlocale(LC_ALL, "C.UTF-8");
-  }
+  // Устанавливаем локаль для UTF-8
+  setlocale(LC_ALL, "");
 
-  // Проверяем, нужно ли вообще показывать прогресс
+  // Проверка на валидность входных данных
   if (total <= 0 || current < 0 || current > total) {
-    wprintf(L"[Invalid progress]\n");
+    printf("[Invalid progress]\n");
     return;
   }
 
-  // Рассчитываем заполненную часть
+  // Рассчитываем прогресс
   float progress = (float)current / total;
-  int filled = (int)(progress * bar_width);
+  int filled = progress * bar_width;
+
+  // UTF-8 символы для прогресс-бара
+  const char *full_block = "█";
+  const char *partial_block = "▌";
+  const char *empty_space = " ";
 
   // Печатаем прогресс-бар
-  wprintf(L"[");
+  printf("[");
   for (int i = 0; i < bar_width; i++) {
     if (i < filled) {
-      wprintf(L"█"); // Полный блок (U+2588)
+      printf("%s", full_block);
     } else if (i == filled) {
-      wprintf(L"▌"); // Полублок (U+258C)
+      printf("%s", partial_block);
     } else {
-      wprintf(L" "); // Пустое пространство
+      printf("%s", empty_space);
     }
   }
-  wprintf(L"] %d%% (%d/%d)\n", (int)(progress * 100), current, total);
+  printf("] %d%% (%d/%d)\n", (int)(progress * 100), current, total);
 }
