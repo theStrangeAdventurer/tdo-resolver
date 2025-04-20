@@ -462,8 +462,9 @@ void print_todo_list(todo_t *list, int listc, int *active_index,
   int _start = *start_index;
   int _end =
       (_start + MAX_RENDER_ITEMS) > listc ? listc : _start + MAX_RENDER_ITEMS;
-  printf("%s \n", random_emoji());
+  printf(" %s %s\n\n", random_emoji(), random_phrase());
   print_unicode_progress(*active_index + 1, listc, PROGRESS_BAR_WIDTH);
+  printf("\n");
 
   char *has_items_before_start_item = _start > 0 ? "▴" : "▬";
   char *has_items_after_end_item = _end < listc - 1 ? "▾" : "▬";
