@@ -32,6 +32,90 @@ void setDimmedColor() { printf(COLOR_DIMMED); }
 void resetDimmedColor() { printf(COLOR_DIMMED_RESET); }
 void resetDimmedDeprecatedColor() { printf(COLOR_DIMMED_DEPRECATED_RESET); }
 
+char *escape_string(char *value) {
+  if (!value)
+    return NULL;
+
+  size_t spec_symbols_count = 0;
+  const char *p = value;
+  while (*p) {
+    if (*p == '"' || *p == '\\' || (unsigned char)*p <= 0x1F) {
+      spec_symbols_count++; // Каждый управляющий символ добавит 1 слеш
+    }
+    //
+    // if (*p == '"' || *p == '\n' || *p == '\r' || *p == '\\') {
+    //   spec_symbols_count++; // Каждый из этих символов добавит 1 слеш
+    // }
+    p++;
+  }
+  char *result = malloc(strlen(value) + spec_symbols_count + 1);
+
+  if (!result)
+    return NULL;
+
+  char *out = result;
+  for (p = value;         // Reset pointer to start input str value
+       *p != '\0'; p++) { // Go through the string until we meet null terminator
+
+    unsigned char c = *p;
+    if (c == '"') {
+      *out++ = '\\';
+      *out++ = '"'; // \" для кавычек
+    } else if (c == '\\') {
+      *out++ = '\\';
+      *out++ = '\\';        // \\ для слеша
+    } else if (c <= 0x1F) { // Управляющие символы
+      *out++ = '\\';
+      switch (c) {
+      case '\b':
+        *out++ = 'b';
+        break;
+      case '\f':
+        *out++ = 'f';
+        break;
+      case '\n':
+        *out++ = 'n';
+        break;
+      case '\r':
+        *out++ = 'r';
+        break;
+      case '\t':
+        *out++ = 't';
+        break;
+      default: // Для остальных (редких) управляющих символов
+        snprintf(out, 5, "u%04X", c); // \uXXXX
+        out += 5;
+        break;
+      }
+    } else {
+      *out++ = c; // Остальные символы
+    }
+    // switch (*p) {
+    //  case '"':
+    //    *out++ = '\\';
+    //    *out++ = '"';
+    //    break; // \" для кавычек
+    //  case '\n':
+    //    *out++ = '\\';
+    //    *out++ = 'n';
+    //    break; // \n как текст
+    //  case '\r':
+    //    *out++ = '\\';
+    //    *out++ = 'r';
+    //    break; // \r как текст
+    //  case '\\':
+    //    *out++ = '\\';
+    //    *out++ = '\\';
+    //    break; // \\ для слеша
+    //  default:
+    //    *out++ = *p;
+    //    break; // Остальные символы
+    //  }
+  }
+  *out = '\0';
+  return result;
+}
+
 void open_source_in_editor(const char *editor, char *file_path,
                            int line_number) {
   char command[256];
@@ -522,13 +606,43 @@ char *get_todos_json(todo_t *todos, size_t todos_num) {
   char json_start[50];
   char json_end[] = "]\n}";
 
-  sprintf(json_start, "{ %s: true,\"count\": %d,\"data\": [", EXPORT_MARKER,
+  sprintf(json_start, "{ \"%s\": true,\"count\": %d,\"data\": [", EXPORT_MARKER,
           (int)todos_num);
   for (size_t i = 0; i < todos_num; i++) {
+    // >>>
+    json_len += strlen("{\"title\":");
     json_len += strlen(todos[i].title);
-    json_len += 2; // for quotes and
+    json_len += 3; // for title quotes and comma
+                   // <<<
+    // >>>
+    json_len += strlen("{\"path\":");
+    json_len += strlen(todos[i].path);
+    json_len += 3; // for path quotes and comma
+                   // <<<
+    // >>>
+    json_len += strlen("{\"line\":");
+    json_len += sizeof(todos[i].line);
+    json_len += 1; // for line comma
+                   // <<<
+    char *escaped_context_before =
+        escape_string(todos[i].surround_content_before);
+    char *escaped_context_after =
+        escape_string(todos[i].surround_content_after);
+    // >>>
+    json_len += strlen("{\"surround_content_before\":") * 2;
+    json_len += strlen(escaped_context_before);
+    json_len += 3; // for quotes and comma
+                   // <<<
+
+    // >>>
+    json_len += strlen("{\"surround_content_after\":");
+    json_len += strlen(escaped_context_after);
+    json_len += 3; // for quotes and comma
+                   // <<<
+
+    json_len += 1; // }
     if (i != (todos_num - 1)) {
-      json_len += 1; // for comma
+      json_len += 1; // for whole item comma
     }
   }
   size_t json_start_len = strlen(json_start);
@@ -540,10 +654,22 @@ char *get_todos_json(todo_t *todos, size_t todos_num) {
   if (!result)
     return NULL;
   char *ptr = result; // Бегунок, который будет бегать по строке
-  ptr +=
-      sprintf(ptr, "%s", json_start); // Записываем json_start и двигаем бегунок
+  ptr += sprintf(ptr, "%s",
+                 json_start); // Записываем json_start и двигаем бегунок
   for (size_t i = 0; i < todos_num; i++) {
-    ptr += sprintf(ptr, "\"%s\"", todos[i].title);
+    char *escaped_context_before =
+        escape_string(todos[i].surround_content_before);
+    char *escaped_context_after =
+        escape_string(todos[i].surround_content_after);
+    ptr += sprintf(ptr, "{\"title\":\"%s\"", todos[i].title);
+    ptr += sprintf(ptr, ",\"surround_content_before\":\"%s\"",
+                   escaped_context_before);
+    ptr += sprintf(ptr, ",\"surround_content_after\":\"%s\"",
+                   escaped_context_after);
+    ptr += sprintf(ptr, ",\"path\":\"%s\"", todos[i].path);
+    ptr += sprintf(ptr, ",\"line\":%d", todos[i].line);
+    ptr += sprintf(ptr, "}");
+
     if (i != (todos_num - 1)) {
       ptr += sprintf(ptr, ",");
     }

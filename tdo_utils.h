@@ -20,7 +20,7 @@ void print_todo_list(todo_t *list, int listc, int *active_index,
                      int should_render_banner);
 void print_help(void);
 void print_hotkeys(void);
-
+char *escape_quotes(char *value);
 char *prettify_path(char *path);
 void open_source_in_editor(const char *editor, char *file_path,
                            int line_number);
