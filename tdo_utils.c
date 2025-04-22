@@ -42,10 +42,6 @@ char *escape_string(char *value) {
     if (*p == '"' || *p == '\\' || (unsigned char)*p <= 0x1F) {
       spec_symbols_count++; // Каждый управляющий символ добавит 1 слеш
     }
-    //
-    // if (*p == '"' || *p == '\n' || *p == '\r' || *p == '\\') {
-    //   spec_symbols_count++; // Каждый из этих символов добавит 1 слеш
-    // }
     p++;
   }
   char *result = malloc(strlen(value) + spec_symbols_count + 1);
@@ -90,27 +86,6 @@ char *escape_string(char *value) {
     } else {
       *out++ = c; // Остальные символы
     }
-    // switch (*p) {
-    //  case '"':
-    //    *out++ = '\\';
-    //    *out++ = '"';
-    //    break; // \" для кавычек
-    //  case '\n':
-    //    *out++ = '\\';
-    //    *out++ = 'n';
-    //    break; // \n как текст
-    //  case '\r':
-    //    *out++ = '\\';
-    //    *out++ = 'r';
-    //    break; // \r как текст
-    //  case '\\':
-    //    *out++ = '\\';
-    //    *out++ = '\\';
-    //    break; // \\ для слеша
-    //  default:
-    //    *out++ = *p;
-    //    break; // Остальные символы
-    //  }
   }
   *out = '\0';
   return result;
@@ -603,7 +578,7 @@ void print_help(void) {
 char *get_todos_json(todo_t *todos, size_t todos_num) {
 
   size_t json_len = 0;
-  char json_start[50];
+  char json_start[100];
   char json_end[] = "]\n}";
 
   sprintf(json_start, "{ \"%s\": true,\"count\": %d,\"data\": [", EXPORT_MARKER,

@@ -149,11 +149,8 @@ int main(int argc, char *argv[]) {
     printf("$EDITOR env var do not exists, use \"%s\" as a default editor \n",
            editor);
   }
-  int opt;
   char *default_export_file =
       "/tdo_export.json"; // '/' only for concatenation purposes
-  char *export_path = NULL;
-  int should_export = 0;
 
   const char *ignore_dirs[] = {"node_modules", "dist", "build",
                                ".git"}; // TODO: move to env vars
