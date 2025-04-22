@@ -16,8 +16,10 @@
 #define COLOR_CYAN "\033[36m"
 #define BOLD_SET "\033[1m"
 #define BOLD_RESET "\033[22m"
-#define COLOR_DIMMED "\033[2;37m"
-#define COLOR_DIMMED_RESET "\033[0;0m"
+#define COLOR_DIMMED "\033[2m"
+#define COLOR_DIMMED_RESET "\033[0m"
+#define COLOR_DIMMED_DEPRECATED "\033[2;37m"
+#define COLOR_DIMMED_DEPRECATED_RESET "\033[0;0m"
 
 #define SURROUND_CONTEXT_LINES 5
 #define ANIMATION_TIME 50000
@@ -25,8 +27,10 @@
 
 void setGreenColor() { printf(COLOR_GREEN); }
 void resetColor() { printf(COLOR_RESET); }
+void setDimmedDeprecatedColor() { printf(COLOR_DIMMED_DEPRECATED); }
 void setDimmedColor() { printf(COLOR_DIMMED); }
 void resetDimmedColor() { printf(COLOR_DIMMED_RESET); }
+void resetDimmedDeprecatedColor() { printf(COLOR_DIMMED_DEPRECATED_RESET); }
 
 void open_source_in_editor(const char *editor, char *file_path,
                            int line_number) {
@@ -463,14 +467,6 @@ void print_todo_list(todo_t *list, int listc, int *active_index,
   int _end =
       (_start + MAX_RENDER_ITEMS) > listc ? listc : _start + MAX_RENDER_ITEMS;
   printf(" %s %s\n", random_emoji(), random_phrase());
-  setDimmedColor();
-  printf(" %s:%d \n", prettify_path(list[*active_index].path),
-         list[*active_index].line);
-  resetDimmedColor();
-  setGreenColor();
-  print_unicode_progress(*active_index + 1, listc, PROGRESS_BAR_WIDTH);
-  printf("\n");
-
   char *has_items_before_start_item = _start > 0 ? "▴" : "▬";
   char *has_items_after_end_item = _end < listc - 1 ? "▾" : "▬";
   printf(" %s\n", has_items_before_start_item);
@@ -485,21 +481,27 @@ void print_todo_list(todo_t *list, int listc, int *active_index,
     }
   }
   printf(" %s\n", has_items_after_end_item);
+  setDimmedColor();
+  printf(" %s:%d \n", prettify_path(list[*active_index].path),
+         list[*active_index].line);
 
+  print_unicode_progress(*active_index + 1, listc, PROGRESS_BAR_WIDTH);
+  resetDimmedColor();
+  setGreenColor();
+  printf("\n");
   if (_opened != -1) {
     resetColor();
-    setDimmedColor();
-    printf(" ╔═══ %s:%d \n", prettify_path(list[_opened].path),
-           list[_opened].line);
+    setDimmedDeprecatedColor();
+    printf(" ▬\n");
     printf(" ║ %s\n", replace_newlines(list[_opened].surround_content_before));
-    resetDimmedColor();
+    resetDimmedDeprecatedColor();
     printf(BOLD_SET);
     printf(" ║ %s\n", list[_opened].raw_title);
     printf(BOLD_RESET);
-    setDimmedColor();
+    setDimmedDeprecatedColor();
     printf(" ║ %s\n", replace_newlines(list[_opened].surround_content_after));
-    printf(" ╚═══ \n");
-    resetDimmedColor();
+    printf(" ▬\n");
+    resetDimmedDeprecatedColor();
     print_space_hotkey();
   }
   resetColor();

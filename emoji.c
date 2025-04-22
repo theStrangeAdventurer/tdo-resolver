@@ -49,7 +49,7 @@ void print_unicode_progress(int current, int total, int bar_width) {
   int filled = progress * bar_width;
 
   // UTF-8 символы для прогресс-бара
-  const char *full_block = "┈";
+  const char *full_block = "┉";
   const char *partial_block = "┉";
   const char *empty_space = " "; // Печатаем прогресс-бар
                                  //
