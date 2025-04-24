@@ -27,7 +27,7 @@ typedef struct {
 int parse_arguments(int argc, char *argv[], ProgramOptions *options) {
   if (argc < 2) {
     fprintf(stderr,
-            "Usage: %s <view|export> --dir <directory> [--file <filename>]\n",
+            "Usage: %s <view|export> --dir <directory> [--to <filename>]\n",
             argv[0]);
     return 0;
   }
@@ -35,6 +35,12 @@ int parse_arguments(int argc, char *argv[], ProgramOptions *options) {
   // Parse tool mode (view/export)
   strncpy(options->mode, argv[1], sizeof(options->mode) - 1);
   options->mode[sizeof(options->mode) - 1] = '\0';
+
+  if (strcmp(options->mode, "--help") == 0) {
+    printf("Usage: %s <view|export> --dir <directory> [--to <filename>]\n",
+           argv[0]);
+    return 0;
+  }
 
   if (strcmp(options->mode, "view") != 0 &&
       strcmp(options->mode, "export") != 0) {

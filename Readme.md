@@ -1,7 +1,25 @@
 # TDO - your best todo resolver tool
 A CLI tool to manage and export your code annotations (TODO/FIXME).
 
+![tdo demo](./demo.gif)
+
 ## Usage
+
+### How to build
+
+You must have a Linux or Mac os device with make and gcc installed.
+
+```
+git clone https://github.com/theStrangeAdventurer/tdo-resolver <your-dir>
+
+cd <your-dir>
+
+make
+
+sudo mv ./tdo /usr/local/bin/
+
+tdo --help
+```
 
 ### View mode
 Browse your todos interactively and open them in your editor (`EDITOR` env var) by pressing Space (␣)
