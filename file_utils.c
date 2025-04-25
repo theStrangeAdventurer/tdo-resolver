@@ -5,20 +5,18 @@
 #include <string.h>
 #include <sys/stat.h>
 
-// Функция для проверки, нужно ли игнорировать элемент
 int should_ignore(const char *path, const char **ignore_list,
                   size_t ignore_count) {
   const char *name = strrchr(path, '/') ? strrchr(path, '/') + 1 : path;
 
   for (size_t i = 0; i < ignore_count; i++) {
     if (strcmp(name, ignore_list[i]) == 0) {
-      return 1; // Игнорировать
+      return 1;
     }
   }
-  return 0; // Не игнорировать
+  return 0;
 }
 
-// Функция для проверки расширения
 int has_ignored_extension(const char *name, const char **ignore_exts,
                           size_t ignore_exts_count) {
   const char *ext = strrchr(name, '.');

@@ -39,8 +39,21 @@ char *escape_string(char *value) {
   size_t spec_symbols_count = 0;
   const char *p = value;
   while (*p) {
-    if (*p == '"' || *p == '\\' || (unsigned char)*p <= 0x1F) {
-      spec_symbols_count++; // Каждый управляющий символ добавит 1 слеш
+    if (*p == '"' || *p == '\\') {
+      spec_symbols_count += 1;
+    } else if ((unsigned char)*p <= 0x1F) {
+      switch (*p) {
+      case '\b':
+      case '\f':
+      case '\n':
+      case '\r':
+      case '\t':
+        spec_symbols_count += 1; // \b, \f, \n, \r, \t
+        break;
+      default:
+        spec_symbols_count += 5; // \uXXXX symbols
+        break;
+      }
     }
     p++;
   }
@@ -78,13 +91,13 @@ char *escape_string(char *value) {
       case '\t':
         *out++ = 't';
         break;
-      default: // Для остальных (редких) управляющих символов
-        snprintf(out, 5, "u%04X", c); // \uXXXX
-        out += 5;
+      default:
+        snprintf(out, 7, "u%04X", c); // 0x01, 0x02, ...  to \uXXXX
+        out += 6;
         break;
       }
     } else {
-      *out++ = c; // Остальные символы
+      *out++ = c; // Rest symbols
     }
   }
   *out = '\0';
@@ -566,15 +579,6 @@ void print_todo_list(todo_t *list, int listc, int *active_index,
   resetColor();
 }
 
-void print_help(void) {
-  printf("Usage: tdo [options] [command]\n");
-  printf("Commands:\n");
-  printf("  export - Exports all todos from project to json file\n");
-  printf("Options:\n");
-  printf("  --dir <path>  - Specify the directory to process\n");
-  printf("  --file <value> - Specify the json filename for an export\n");
-}
-
 char *get_todos_json(todo_t *todos, size_t todos_num) {
 
   size_t json_len = 0;
@@ -585,8 +589,9 @@ char *get_todos_json(todo_t *todos, size_t todos_num) {
           (int)todos_num);
   for (size_t i = 0; i < todos_num; i++) {
     // >>>
+    char *escaped_title = escape_string(todos[i].title);
     json_len += strlen("{\"title\":");
-    json_len += strlen(todos[i].title);
+    json_len += strlen(escaped_title);
     json_len += 3; // for title quotes and comma
                    // <<<
     // >>>
@@ -619,6 +624,9 @@ char *get_todos_json(todo_t *todos, size_t todos_num) {
     if (i != (todos_num - 1)) {
       json_len += 1; // for whole item comma
     }
+    free(escaped_context_after);
+    free(escaped_context_before);
+    free(escaped_title);
   }
   size_t json_start_len = strlen(json_start);
   size_t json_end_len = strlen(json_end);
@@ -636,7 +644,9 @@ char *get_todos_json(todo_t *todos, size_t todos_num) {
         escape_string(todos[i].surround_content_before);
     char *escaped_context_after =
         escape_string(todos[i].surround_content_after);
-    ptr += sprintf(ptr, "{\"title\":\"%s\"", todos[i].title);
+    char *escaped_title = escape_string(todos[i].title);
+
+    ptr += sprintf(ptr, "{\"title\":\"%s\"", escaped_title);
     ptr += sprintf(ptr, ",\"surround_content_before\":\"%s\"",
                    escaped_context_before);
     ptr += sprintf(ptr, ",\"surround_content_after\":\"%s\"",
@@ -644,7 +654,9 @@ char *get_todos_json(todo_t *todos, size_t todos_num) {
     ptr += sprintf(ptr, ",\"path\":\"%s\"", todos[i].path);
     ptr += sprintf(ptr, ",\"line\":%d", todos[i].line);
     ptr += sprintf(ptr, "}");
-
+    free(escaped_context_after);
+    free(escaped_context_before);
+    free(escaped_title);
     if (i != (todos_num - 1)) {
       ptr += sprintf(ptr, ",");
     }
