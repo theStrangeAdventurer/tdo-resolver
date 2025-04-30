@@ -5,18 +5,21 @@
 #include <unistd.h>
 
 int global_skip_banner = 0;
-void decrement_indexes(int *active_index, int *start_index) {
+
+static void decrement_indexes(int *active_index, int *start_index) {
   (*active_index)--;
   if (*active_index < *start_index) {
     (*start_index)--;
   }
 }
-void increment_indexes(int *active_index, int *start_index) {
+
+static void increment_indexes(int *active_index, int *start_index) {
   (*active_index)++;
   if (*active_index > (*start_index + MAX_RENDER_ITEMS)) {
     (*start_index)++;
   }
 }
+
 void render_loop(todo_t *list, int *active_index, int *opened_index,
                  int *start_index, int total_files, const char *editor) {
   print_todo_list(list, total_files, active_index, opened_index, start_index,
@@ -67,9 +70,6 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
         print_todo_list(list, total_files, active_index, opened_index,
                         start_index, global_skip_banner);
         fflush(stdout);
-
-      } else if (c == 'q') { // exit
-        break;
       } else if (c == ' ') {
         if (*opened_index != -1 && *opened_index) {
           open_source_in_editor(editor, list[*opened_index].path,
@@ -80,6 +80,8 @@ void render_loop(todo_t *list, int *active_index, int *opened_index,
                           start_index, global_skip_banner);
           fflush(stdout);
         }
+      } else if (c == 'q') { // exit
+        break;
       }
     }
   }

@@ -24,7 +24,7 @@ typedef struct {
   int to_specified;       // --to option was specified though cli interface
 } ProgramOptions;
 
-int parse_arguments(int argc, char *argv[], ProgramOptions *options) {
+static int parse_arguments(int argc, char *argv[], ProgramOptions *options) {
   if (argc < 2) {
     fprintf(stderr,
             "Usage: %s <view|export> --dir <directory> [--to <filename>]\n",
@@ -92,12 +92,12 @@ int parse_arguments(int argc, char *argv[], ProgramOptions *options) {
 }
 
 // Global vars >>
-file_tree_t *global_tree = NULL;
-todo_t *global_list = NULL;
-size_t global_total_files = 0;
+static file_tree_t *global_tree = NULL;
+static todo_t *global_list = NULL;
+static size_t global_total_files = 0;
 // << Global Vars;
 
-void signal_handler(int sig) {
+static void signal_handler(int sig) {
   // Restore terminal from raw mode
   disable_raw_mode();
   clear_screen();
@@ -116,13 +116,13 @@ void signal_handler(int sig) {
   exit(1);
 }
 
-int is_editor_available(const char *editor) {
+static int is_editor_available(const char *editor) {
   char command[256];
   snprintf(command, sizeof(command), "command -v %s > /dev/null 2>&1", editor);
   return system(command) == 0;
 }
 
-const char *get_default_editor() {
+static const char *get_default_editor() {
   const char *editors[] = {"nvim", "nano", "vim", "vi",
                            NULL}; // Список редакторов для проверки
   for (int i = 0; editors[i] != NULL; i++) {
