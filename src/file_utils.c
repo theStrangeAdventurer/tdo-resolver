@@ -1,5 +1,5 @@
-#include "./file_utils.h"
-#include <dirent.h> // Подключаем для opendir, readdir, closedir
+#include "../includes/file_utils.h"
+#include <dirent.h> // Подключаем 0, readdir, closedir
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

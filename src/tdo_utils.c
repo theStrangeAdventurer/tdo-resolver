@@ -1,6 +1,6 @@
-#include "tdo_utils.h"
-#include "emoji.h"
-#include "file_utils.h"
+#include "../includes/tdo_utils.h"
+#include "../includes/emoji.h"
+#include "../includes/file_utils.h"
 #include <regex.h>
 #include <stddef.h>
 #include <stdio.h>

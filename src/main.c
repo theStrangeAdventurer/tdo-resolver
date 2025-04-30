@@ -1,7 +1,7 @@
-#include "./render.h"
-#include "./tdo_utils.h"
-#include "./term.h"
-#include <file_utils.h>
+#include "../includes/file_utils.h"
+#include "../includes/render.h"
+#include "../includes/tdo_utils.h"
+#include "../includes/term.h"
 #include <getopt.h>
 #include <signal.h>
 #include <stddef.h>

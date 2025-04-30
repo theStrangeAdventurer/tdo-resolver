@@ -1,6 +1,6 @@
-#include "render.h"
-#include "tdo_utils.h"
-#include "term.h"
+#include "../includes/render.h"
+#include "../includes/tdo_utils.h"
+#include "../includes/term.h"
 #include <stdio.h>
 #include <unistd.h>
 
