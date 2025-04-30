@@ -16,7 +16,7 @@ cd <your-dir>
 
 make
 
-sudo mv ./tdo /usr/local/bin/
+sudo mv ./build/tdo /usr/local/bin/
 
 tdo --help
 ```

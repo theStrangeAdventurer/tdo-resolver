@@ -2,29 +2,30 @@
 CC = gcc
 
 # Флаги компиляции
-CFLAGS = -Wall -Wextra -std=gnu99
+CFLAGS = -Wall -Wextra -std=gnu99 -Iincludes
 
 # Имя исполняемого файла
 TARGET = tdo
 
-# Исходные файлы
-SRCS = main.c file_utils.c term.c render.c tdo_utils.c emoji.c
+SRCS = $(wildcard src/*.c)
+OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRCS))
+HEADERS = $(wildcard includes/*.h)
+BUILD_DIR = build
 
-# Объектные файлы
-OBJS = $(SRCS:.c=.o)
+all: $(BUILD_DIR)/$(TARGET)
 
-# Правило по умолчанию
-all: $(TARGET)
+$(BUILD_DIR):
+	mkdir -p $@
 
-# Сборка программы
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+# build
+$(BUILD_DIR)/$(TARGET): $(OBJS) | $(BUILD_DIR)
+	$(CC) $(OBJS) -o $@
 
-# Правило для компиляции .c файлов в .o
-%.o: %.c
+# src/*.c -> build/*.o
+$(BUILD_DIR)/%.o: src/%.c $(HEADERS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Очистка
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -rf $(BUILD_DIR)
 
+.PHONY: all clean
