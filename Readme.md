@@ -24,7 +24,7 @@ tdo --help
 ### View mode
 Browse your todos interactively and open them in your editor (`EDITOR` env var) by pressing Space (␣)
 ```sh
-# Run in view mode (with TUE)
+# Run in view mode (with TUI)
 ./tdo view --dir <your-project-dir>
 
 # Run in export mode (exports todos in any json file on your filesystem)
