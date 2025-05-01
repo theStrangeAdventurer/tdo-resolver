@@ -542,7 +542,7 @@ void print_todo_list(todo_t *list, int listc, int *active_index,
   char *has_items_before_start_item = _start > 0 ? "▴" : "▬";
   char *has_items_after_end_item = _end < listc - 1 ? "▾" : "▬";
   printf(" %s\n", has_items_before_start_item);
-  for (int i = _start; i < _end; i++) {
+  for (int i = _start; i <= _end; i++) {
     if (i == *active_index && *active_index == *opened_index) {
       printf(" ║▸[%s]\n", list[i].title);
       setGreenColor();
